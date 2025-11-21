@@ -1,12 +1,9 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import dbConnect from '@/lib/db';
-import Image from '@/models/Image';
+import { db } from '@/lib/firebase';
 
 export async function POST() {
     try {
-        await dbConnect();
-
         const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
         const apiToken = process.env.CLOUDFLARE_API_TOKEN;
 
@@ -35,18 +32,23 @@ export async function POST() {
         const cfImageIds = new Set(cfImages.map((img) => img.id));
         let newCount = 0;
 
+        const batch = db.batch();
+        let batchCount = 0;
+
         // 1. Upsert new images
         for (const img of cfImages) {
-            const existing = await Image.findOne({ cloudflareId: img.id });
+            const docRef = db.collection('images').doc(img.id);
+            const doc = await docRef.get();
 
-            if (!existing) {
-                await Image.create({
+            if (!doc.exists) {
+                batch.set(docRef, {
                     cloudflareId: img.id,
                     url: img.variants?.[0] || '',
                     metadata: img.meta || {},
                     status: 'pending',
-                    uploaded: img.uploaded,
+                    uploaded: img.uploaded ? new Date(img.uploaded) : new Date(),
                 });
+                batchCount++;
                 newCount++;
             }
         }
@@ -57,14 +59,21 @@ export async function POST() {
         // However, if the user manually deleted from CF, they probably want it gone.
         // Let's assume strict sync for 'pending' items at least.
 
-        const pendingImages = await Image.find({ status: 'pending' });
+        const pendingSnapshot = await db.collection('images').where('status', '==', 'pending').get();
         let deletedCount = 0;
 
-        for (const img of pendingImages) {
-            if (!cfImageIds.has(img.cloudflareId)) {
-                await Image.deleteOne({ _id: img._id });
+        pendingSnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (!cfImageIds.has(data.cloudflareId)) {
+                batch.delete(doc.ref);
+                batchCount++;
                 deletedCount++;
             }
+        });
+
+        // Commit batch if there are changes
+        if (batchCount > 0) {
+            await batch.commit();
         }
 
         return NextResponse.json({
