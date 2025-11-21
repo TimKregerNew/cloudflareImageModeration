@@ -52,13 +52,15 @@ export default function ImageCard({ image, onApprove, onReject }) {
 
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <button
-                        className="btn btn-success"
-                        onClick={handleApprove}
-                        disabled={isApproving}
-                    >
-                        {isApproving ? 'Approving...' : 'Approve'}
-                    </button>
+                    {onApprove && (
+                        <button
+                            className="btn btn-success"
+                            onClick={handleApprove}
+                            disabled={isApproving}
+                        >
+                            {isApproving ? 'Approving...' : 'Approve'}
+                        </button>
+                    )}
                     <button
                         className="btn btn-danger"
                         onClick={() => onReject(image)}
