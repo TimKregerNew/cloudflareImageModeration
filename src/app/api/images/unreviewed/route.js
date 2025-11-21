@@ -12,13 +12,22 @@ export async function GET() {
         });
 
         // Map to frontend format if needed (renaming cloudflareId to id)
-        const formattedImages = unreviewedImages.map((img) => ({
-            id: img.cloudflareId,
-            url: img.url,
-            meta: img.metadata,
-            uploaded: img.uploaded || new Date().toISOString(), // Fallback
-            variants: [img.url], // Mock variants structure
-        }));
+        const formattedImages = unreviewedImages.map((img) => {
+            let uploadedDate = new Date();
+            if (img.uploaded && typeof img.uploaded.toDate === 'function') {
+                uploadedDate = img.uploaded.toDate();
+            } else if (img.uploaded) {
+                uploadedDate = new Date(img.uploaded);
+            }
+
+            return {
+                id: img.cloudflareId,
+                url: img.url,
+                meta: img.metadata,
+                uploaded: uploadedDate.toISOString(),
+                variants: [img.url], // Mock variants structure
+            };
+        });
 
         return NextResponse.json({ images: formattedImages });
     } catch (error) {

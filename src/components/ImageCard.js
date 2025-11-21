@@ -27,7 +27,16 @@ export default function ImageCard({ image, onApprove, onReject }) {
             <div className="card-content">
                 <div className="card-meta">
                     <p>ID: {image.id.substring(0, 8)}...</p>
-                    <p>Uploaded: {new Date(image.uploaded).toLocaleDateString()}</p>
+                    <p>
+                        Uploaded: {(() => {
+                            console.log('Image uploaded value:', image.uploaded);
+                            try {
+                                return new Date(image.uploaded).toLocaleDateString();
+                            } catch (e) {
+                                return 'Invalid Date';
+                            }
+                        })()}
+                    </p>
                     {image.meta && Object.keys(image.meta).length > 0 && (
                         <div className="metadata-section" style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#aaa' }}>
                             <strong>Metadata:</strong>
