@@ -10,13 +10,20 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [activeTab, setActiveTab] = useState('unreviewed'); // 'unreviewed' | 'approved'
+
     useEffect(() => {
         fetchImages();
-    }, []);
+    }, [activeTab]); // Refetch when tab changes
 
     const fetchImages = async () => {
+        setLoading(true);
         try {
-            const res = await axios.get('/api/images/unreviewed');
+            const endpoint = activeTab === 'unreviewed'
+                ? '/api/images/unreviewed'
+                : '/api/images/approved';
+
+            const res = await axios.get(endpoint);
             setImages(res.data.images || []);
         } catch (err) {
             console.error('Error fetching images:', err);
@@ -73,10 +80,6 @@ export default function Home() {
         }
     };
 
-    if (loading) {
-        return <div className="loading">Loading unreviewed images...</div>;
-    }
-
     if (error) {
         return <div className="empty-state" style={{ color: 'red' }}>{error}</div>;
     }
@@ -85,26 +88,65 @@ export default function Home() {
         <main className="container">
             <header className="header">
                 <h1>Photo Review Dashboard</h1>
-                <button className="btn btn-primary" onClick={fetchImages} style={{ marginRight: '1rem' }}>
-                    Refresh
-                </button>
-                <button className="btn btn-success" onClick={handleSync}>
-                    Sync from Cloudflare
-                </button>
-                <button className="btn btn-danger" onClick={() => signOut()} style={{ marginLeft: '1rem' }}>
-                    Logout
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button className="btn btn-primary" onClick={fetchImages}>
+                        Refresh
+                    </button>
+                    <button className="btn btn-success" onClick={handleSync}>
+                        Sync from Cloudflare
+                    </button>
+                    <button className="btn btn-danger" onClick={() => signOut()}>
+                        Logout
+                    </button>
+                </div>
             </header>
 
-            {images.length === 0 ? (
+            <div className="tabs" style={{ marginBottom: '1rem', borderBottom: '1px solid #ccc', paddingBottom: '0.5rem' }}>
+                <button
+                    onClick={() => setActiveTab('unreviewed')}
+                    style={{
+                        marginRight: '1rem',
+                        fontWeight: activeTab === 'unreviewed' ? 'bold' : 'normal',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        fontSize: '1.1rem',
+                        color: activeTab === 'unreviewed' ? '#0070f3' : '#333'
+                    }}
+                >
+                    Unreviewed
+                </button>
+                <button
+                    onClick={() => setActiveTab('approved')}
+                    style={{
+                        fontWeight: activeTab === 'approved' ? 'bold' : 'normal',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        fontSize: '1.1rem',
+                        color: activeTab === 'approved' ? '#0070f3' : '#333'
+                    }}
+                >
+                    Approved
+                </button>
+            </div>
+
+            {loading ? (
+                <div className="loading">Loading {activeTab} images...</div>
+            ) : images.length === 0 ? (
                 <div className="empty-state">
-                    <h2>No unreviewed images found.</h2>
-                    <p>Great job! You're all caught up.</p>
+                    <h2>No {activeTab} images found.</h2>
+                    {activeTab === 'unreviewed' && <p>Great job! You're all caught up.</p>}
                 </div>
             ) : (
                 <div className="grid">
                     {images.map((image) => (
-                        <ImageCard key={image.id} image={image} onApprove={handleApprove} onReject={handleReject} />
+                        <ImageCard
+                            key={image.id}
+                            image={image}
+                            onApprove={activeTab === 'unreviewed' ? handleApprove : null}
+                            onReject={handleReject}
+                        />
                     ))}
                 </div>
             )}
