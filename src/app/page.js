@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import ImageCard from '@/components/ImageCard';
+import { signOut } from 'next-auth/react';
 
 export default function Home() {
     const [images, setImages] = useState([]);
@@ -89,6 +90,9 @@ export default function Home() {
                 </button>
                 <button className="btn btn-success" onClick={handleSync}>
                     Sync from Cloudflare
+                </button>
+                <button className="btn btn-danger" onClick={() => signOut()} style={{ marginLeft: '1rem' }}>
+                    Logout
                 </button>
             </header>
 

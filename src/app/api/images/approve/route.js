@@ -16,13 +16,22 @@ export async function POST(request) {
             );
         }
 
-        // Check if already approved
+        // Check if already exists
         const existing = await Image.findOne({ cloudflareId: id });
+
         if (existing) {
-            return NextResponse.json(
-                { message: 'Image already approved' },
-                { status: 200 }
-            );
+            if (existing.status === 'approved') {
+                return NextResponse.json(
+                    { message: 'Image already approved' },
+                    { status: 200 }
+                );
+            } else {
+                // Update status to approved
+                existing.status = 'approved';
+                existing.approvedAt = new Date();
+                await existing.save();
+                return NextResponse.json({ success: true, image: existing });
+            }
         }
 
         const newImage = await Image.create({
