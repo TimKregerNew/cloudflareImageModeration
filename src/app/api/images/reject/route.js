@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { db } from '@/lib/firebase';
 
 export async function DELETE(request) {
     try {
@@ -32,6 +33,9 @@ export async function DELETE(request) {
                 },
             }
         );
+
+        // Delete from Firestore
+        await db.collection('images').doc(id).delete();
 
         return NextResponse.json({ success: true });
     } catch (error) {
